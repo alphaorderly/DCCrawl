@@ -42,15 +42,19 @@ def mainCrawl(BASE_URL, am):
             # 글 번호 받아오기
             address_number = address.split('&')[1].split("=")[1]
 
+            # 테스트용
+            #address = "https://gall.dcinside.com/mgallery/board/view/?id=destiny&no=1775239&page=1"
+            #address_number = "1775239"
+
             # 사진 있으면 사진 받아오고, 없으면 받지 않기.
-            if (not item.find('em', class_='icon_img icon_pic') is None):
+            if item.find_all('em', class_='icon_img icon_pic'):
                 directory_name = "%s/img %s %s"%(SAVE_DIRECTORY, address_number, title)
             else:
                 directory_name = "%s/%s %s" % (SAVE_DIRECTORY, address_number, title)
 
             if not os.path.isdir(directory_name):
                 os.makedirs(directory_name)
-                if (not item.find('em', class_='icon_img icon_pic') is None):
+                if item.find_all('em', class_='icon_img icon_pic'):
                     img_download(DCINSIDE_URL + address, directory_name)
                 str_download(DCINSIDE_URL + address, directory_name, title)
             else:
@@ -61,6 +65,10 @@ def mainCrawl(BASE_URL, am):
 
 # 이미지 다운로드
 def img_download(dcurl, directory):
+    # 테스트용
+    #dcurl = "https://gall.dcinside.com/mgallery/board/view/?id=destiny&no=1775239&page=1"
+
+
     response = requests.get(dcurl, headers=headers)
     soup = bs4.BeautifulSoup(response.content, 'html.parser', from_encoding='utf-8')
     article_contents = soup.find('div', class_='writing_view_box').find_all('div')
@@ -74,7 +82,6 @@ def img_download(dcurl, directory):
         savename = img_url.split("no=")[2]
         # 파일 이름에 % 제거
         savename = savename.replace('%', '')
-        print(savename)
         # 레퍼러 => 이미지 다운로드
         headers['Referer'] = dcurl
         response = requests.get(img_url, headers=headers)
@@ -88,6 +95,9 @@ def img_download(dcurl, directory):
 
 # HTML 생성
 def str_download(dcurl, directory, title):
+    # 테스트용
+    #dcurl = "https://gall.dcinside.com/mgallery/board/view/?id=destiny&no=1775239&page=1"
+
     response = requests.get(dcurl, headers=headers)
     soup = bs4.BeautifulSoup(response.content, 'html.parser', from_encoding='utf-8')
     article_contents = soup.find('div', class_='writing_view_box').find('div', class_='write_div')
@@ -98,7 +108,7 @@ def str_download(dcurl, directory, title):
 
     # 이미지 첨부파일이 있는지 확인하기
     try:
-        if(len(soup.find('div', class_='appending_file_box').find('ul').find_all('li'))):
+        if soup.find_all('div', class_='appending_file_box') and soup.find('div', class_='appending_file_box').find('ul').find_all('li'):
             image_download_contents = soup.find('div', class_='appending_file_box').find('ul').find_all('li')
             image_available = 1
 
@@ -106,8 +116,10 @@ def str_download(dcurl, directory, title):
                 img_url = i.find('a', href=True)['href']
                 savename.append(img_url.split("no=")[2].replace('%', ''))
 
-    except:
-        print("짤이 없어서 할당 불가능")
+
+    except Exception as e :
+        print(1)
+        print(e)
 
     file = open(directory + "/%s.html"%title, "w", encoding='UTF-8')
     file.write(r"""
@@ -136,7 +148,7 @@ def str_download(dcurl, directory, title):
 # 본격적인 HTML 코딩 부분, 움짤 / 디시콘 / 비디오 예외처리 및 video 움짤 처리 과정
     for item in article_contents:
         try:
-            if image_available == 1 and len(item.find_all('img')):
+            if str(type(item)) != "<class 'bs4.element.NavigableString'>" and image_available == 1 and item.find_all('img'):
                 img = item.find_all('img')
                 for i in img:
                     del i['alt']
@@ -144,19 +156,25 @@ def str_download(dcurl, directory, title):
                     i['src'] = savename[image_count]
                     i['width'] = '75%'
                     image_count += 1
-            if image_available == 1 and len(item.find_all('video')):
-                if(len(item.find_all('video', class_='written_dccon')) or len(item.find_all('video', class_='dc_mv'))):
+        except Exception as e:
+            print(2)
+            print(e)
+        try:
+            if str(type(item)) != "<class 'bs4.element.NavigableString'>" and image_available == 1 and item.find_all('video'):
+                if item.find_all('video', class_='written_dccon') and item.find_all('video', class_='dc_mv'):
                     print("dcmv or dccon", end="")
                 else:
                     vid = item.find_all('video')
-                    vid[0].decompose()
-                    new_tag = soup.new_tag('img')
-                    new_tag['src'] = savename[image_count]
-                    item.append(new_tag)
-                    image_count += 1
-            file.write(str(item))
-        except:
-            print("ERROR",end = "")
+                    for v in vid:
+                        v.decompose()
+                        new_tag = soup.new_tag('img')
+                        new_tag['src'] = savename[image_count]
+                        item.append(new_tag)
+                        image_count += 1
+        except Exception as e:
+            print(3)
+            print(e)
+        file.write(str(item))
 
     file.write(r"""</p>
 
