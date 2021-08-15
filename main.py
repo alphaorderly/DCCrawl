@@ -19,23 +19,23 @@ def main():
     inp.insert(0, '갤러리 주소 입력')
     inp.pack()
 
-    button = tkinter.Button(wn, text="가져오기", command=lambda: ActionThread(inp, inp.get(), button, 2))
+    button = tkinter.Button(wn, text="가져오기", command=lambda: ActionThread(inp, inp.get(), button))
     button.pack()
 
     wn.mainloop()
 
 
-def Action(Entry, URL, btn, am):
+def Action(Entry, URL, btn):
     Entry.config(state='disabled')
     btn.config(state='disabled')
     try:
-        CrawlMain.mainCrawl(URL, am)
+        CrawlMain.mainCrawl(URL)
     except:
         Entry.config(state='normal')
         btn.config(state='normal')
 
-def ActionThread(Entry, URL, btn, am):
-    at = threading.Thread(target=Action, args=(Entry, URL, btn, am, ), daemon=True)
+def ActionThread(Entry, URL, btn):
+    at = threading.Thread(target=Action, args=(Entry, URL, btn, ), daemon=True)
     at.start()
 
 

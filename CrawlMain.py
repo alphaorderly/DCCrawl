@@ -10,7 +10,7 @@ import os
 import random
 import urllib
 
-def mainCrawl(BASE_URL, am):
+def mainCrawl(BASE_URL):
     while(1):
         # 기본 Response
         response = requests.get(BASE_URL, headers=headers)
@@ -26,7 +26,7 @@ def mainCrawl(BASE_URL, am):
             else:
                 break
 
-        item_recent = article_list[place:place + 2] # 가장 최근글 가져오기
+        item_recent = article_list[place:] # 가장 최근글 가져오기
 
         # 글 제목 / 글 주소 / 글 넘버 받아오기
         for item in item_recent:
@@ -37,6 +37,7 @@ def mainCrawl(BASE_URL, am):
             #폴더에 사용하면 안되는 문자 제거 및 공백 제거
             for char in invalid:
                 title = title.replace(char, ' ')
+            title = title.replace('?', '물음표')
 
             title = title.strip(' ')
 
@@ -56,9 +57,8 @@ def mainCrawl(BASE_URL, am):
                 str_download(DCINSIDE_URL + address, directory_name, title)
             else:
                 print(directory_name + " 는 이미 받아온 글입니다.")
-
-        timeset = random.uniform(1.0, 1.5)
-        time.sleep(timeset)
+            time.sleep(1)
+        time.sleep(1)
 
 # 이미지 다운로드
 def img_download(dcurl, directory):
@@ -98,9 +98,14 @@ def str_download(dcurl, directory, title):
     # 테스트용
     #dcurl = "https://gall.dcinside.com/mgallery/board/view/?id=destiny&no=1775239&page=1"
 
-    response = requests.get(dcurl, headers=headers)
-    soup = bs4.BeautifulSoup(response.content, 'html.parser', from_encoding='utf-8')
-    article_contents = soup.find('div', class_='writing_view_box').find('div', class_='write_div')
+    try:
+        response = requests.get(dcurl, headers=headers)
+        soup = bs4.BeautifulSoup(response.content, 'html.parser', from_encoding='utf-8')
+        article_contents = soup.find('div', class_='writing_view_box').find('div', class_='write_div')
+        nickname = soup.find('div', class_='gall_writer ub-writer').find('div', class_='fl')
+    except Exception as e:
+        print(10)
+        print(e)
 
     savename = list()
     image_available = 0
@@ -147,10 +152,11 @@ def str_download(dcurl, directory, title):
     
     <p>""")
 
-    file.write('<a href="%s">원글 보러가기</a>'%dcurl)
 
 # 본격적인 HTML 코딩 부분, 움짤 / 디시콘 / 비디오 예외처리 및 video 움짤 처리 과정
     try:
+        file.write(str(nickname))
+        file.write('<a href="%s">원글 보러가기</a>' % dcurl)
         for item in article_contents:
             if str(type(item)) != "<class 'bs4.element.NavigableString'>":
                 for i in item:

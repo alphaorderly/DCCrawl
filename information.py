@@ -20,4 +20,4 @@ DCINSIDE_URL = "https://gall.dcinside.com"
 
 SAVE_DIRECTORY = "save"
 
-invalid = '<>:"/\|?*. '
+invalid = '<>:"/\|*. '
