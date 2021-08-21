@@ -12,10 +12,11 @@ if not os.path.isdir(SAVE_DIRECTORY):
 
 def main():
     wn = tkinter.Tk()
-    wn.geometry("300x100")
+    wn.geometry("350x50+50+50")
     wn.title("디시 크롤링")
+    wn.resizable(False, False)
 
-    inp = tkinter.Entry(wn, width=250)
+    inp = tkinter.Entry(wn, width=100)
     inp.insert(0, '갤러리 주소 입력')
     inp.pack()
 
@@ -30,6 +31,8 @@ def Action(Entry, URL, btn):
     btn.config(state='disabled')
     try:
         CrawlMain.mainCrawl(URL)
+        Entry.config(state='normal')
+        btn.config(state='normal')
     except:
         Entry.config(state='normal')
         btn.config(state='normal')

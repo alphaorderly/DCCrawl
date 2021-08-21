@@ -13,52 +13,83 @@ import urllib
 def mainCrawl(BASE_URL):
     while(1):
         # 기본 Response
-        response = requests.get(BASE_URL, headers=headers)
-        soup = bs4.BeautifulSoup(response.content, 'html.parser', from_encoding='utf-8')
 
-        article_list = soup.find('tbody').find_all('tr')
+        # 갤러리에서 글 받아오기
+        if(len(BASE_URL.split('&')) == 1):
+            response = requests.get(BASE_URL, headers=headers)
+            soup = bs4.BeautifulSoup(response.content, 'html.parser', from_encoding='utf-8')
 
-        # 공지 넘기기
-        place = 0
-        while(1):
-            if not article_list[place].find_all('em', class_='icon_img icon_txt') and not article_list[place].find_all('em', class_='icon_img icon_pic') and not article_list[place].find_all('em', class_='icon_img icon_movie'):
-                place += 1
-            else:
-                break
+            article_list = soup.find('tbody').find_all('tr')
 
-        item_recent = article_list[place:] # 가장 최근글 가져오기
+            # 공지 넘기기
+            place = 0
+            while(1):
+                if not article_list[place].find_all('em', class_='icon_img icon_txt') and not article_list[place].find_all('em', class_='icon_img icon_pic') and not article_list[place].find_all('em', class_='icon_img icon_movie'):
+                    place += 1
+                else:
+                    break
 
-        # 글 제목 / 글 주소 / 글 넘버 받아오기
-        for item in item_recent:
-            title_tag = item.find('a', href=True)
-            address = title_tag['href']
-            title = title_tag.text
+            item_recent = article_list[place:] # 가장 최근글 가져오기
 
-            #폴더에 사용하면 안되는 문자 제거 및 공백 제거
+            # 글 제목 / 글 주소 / 글 넘버 받아오기
+            for item in item_recent:
+                title_tag = item.find('a', href=True)
+                address = title_tag['href']
+                title = title_tag.text
+
+                #폴더에 사용하면 안되는 문자 제거 및 공백 제거
+                for char in invalid:
+                    title = title.replace(char, ' ')
+                title = title.replace('?', '물음표')
+
+                title = title.strip(' ')
+
+                # 글 번호 받아오기
+                address_number = address.split('&')[1].split("=")[1]
+
+                # 사진 있으면 사진 받아오고, 없으면 받지 않기.
+                if item.find_all('em', class_='icon_img icon_pic'):
+                    directory_name = "%s/img %s %s"%(SAVE_DIRECTORY, address_number, title)
+                else:
+                    directory_name = "%s/%s %s" % (SAVE_DIRECTORY, address_number, title)
+
+                if not os.path.isdir(directory_name):
+                    os.makedirs(directory_name)
+                    if item.find_all('em', class_='icon_img icon_pic') or item.find_all('em', class_='icon_img icon_movie'):
+                        img_download(DCINSIDE_URL + address, directory_name)
+                    str_download(DCINSIDE_URL + address, directory_name, title)
+                else:
+                    print(directory_name + " 는 이미 받아온 글입니다.")
+                time.sleep(1)
+            time.sleep(1)
+        else:
+            response = requests.get(BASE_URL, headers=headers)
+            soup = bs4.BeautifulSoup(response.content, 'html.parser', from_encoding='utf-8')
+
+            title = soup.find('span', class_="title_subject").text
+            address = BASE_URL
+
             for char in invalid:
                 title = title.replace(char, ' ')
             title = title.replace('?', '물음표')
-
             title = title.strip(' ')
 
-            # 글 번호 받아오기
             address_number = address.split('&')[1].split("=")[1]
 
             # 사진 있으면 사진 받아오고, 없으면 받지 않기.
-            if item.find_all('em', class_='icon_img icon_pic'):
-                directory_name = "%s/img %s %s"%(SAVE_DIRECTORY, address_number, title)
+            if soup.find_all('div', class_='appending_file_box'):
+                directory_name = "%s/img %s %s" % (SAVE_DIRECTORY, address_number, title)
             else:
                 directory_name = "%s/%s %s" % (SAVE_DIRECTORY, address_number, title)
 
             if not os.path.isdir(directory_name):
                 os.makedirs(directory_name)
-                if item.find_all('em', class_='icon_img icon_pic') or item.find_all('em', class_='icon_img icon_movie'):
-                    img_download(DCINSIDE_URL + address, directory_name)
-                str_download(DCINSIDE_URL + address, directory_name, title)
+                if soup.find_all('div', class_='appending_file_box'):
+                    img_download(BASE_URL, directory_name)
+                str_download(BASE_URL, directory_name, title)
             else:
                 print(directory_name + " 는 이미 받아온 글입니다.")
-            time.sleep(1)
-        time.sleep(1)
+            break
 
 # 이미지 다운로드
 def img_download(dcurl, directory):
