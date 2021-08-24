@@ -29,7 +29,7 @@ def mainCrawl(BASE_URL):
                 else:
                     break
 
-            item_recent = article_list[place:] # 가장 최근글 가져오기
+            item_recent = article_list[place:place + 2] # 가장 최근글 가져오기
 
             # 글 제목 / 글 주소 / 글 넘버 받아오기
             for item in item_recent:
@@ -60,7 +60,7 @@ def mainCrawl(BASE_URL):
                     str_download(DCINSIDE_URL + address, directory_name, title)
                 else:
                     print(directory_name + " 는 이미 받아온 글입니다.")
-                time.sleep(1)
+                time.sleep(0.5)
             time.sleep(1)
         else:
             response = requests.get(BASE_URL, headers=headers)
@@ -117,6 +117,9 @@ def img_download(dcurl, directory):
             path = "/%s"%savename
 
             #다운로드
+            while os.path.isfile(directory + path):
+                savename = "new" + savename
+                path = "/%s"%savename
             file = open(directory + path, "wb")
             file.write(response.content)
             file.close()
@@ -139,18 +142,19 @@ def str_download(dcurl, directory, title):
         print(e)
 
     savename = list()
-    image_available = 0
     image_count = 0
 
     # 이미지 첨부파일이 있는지 확인하기
     try:
         if soup.find_all('div', class_='appending_file_box') and soup.find('div', class_='appending_file_box').find('ul').find_all('li'):
             image_download_contents = soup.find('div', class_='appending_file_box').find('ul').find_all('li')
-            image_available = 1
 
             for i in image_download_contents:
                 img_url = i.find('a', href=True)['href']
-                savename.append(img_url.split("no=")[2].replace('%', ''))
+                name = img_url.split("no=")[2].replace('%', '')
+                while name in savename:
+                    name = "new" + name
+                savename.append(name)
 
     except Exception as e :
         print(1)
@@ -201,19 +205,22 @@ def str_download(dcurl, directory, title):
                             i['width'] = "75%"
                             image_count += 1
                         if(i.name == 'video'):
-                            if i.has_attr('class'): # 움직이는 디시콘 -> 따로 img로 뽑아야 작동함
+                            if i.has_attr('class') and i['class'][0] != 'dc_mv': # 움직이는 디시콘 -> 따로 img로 뽑아야 작동함
                                 imgsrc = i['data-src']
                                 i.name = 'img'  # img로 바꾸고, attribute 다 지우고 src 추가하기
                                 i.attrs.clear()
                                 i['src'] = imgsrc
                                 continue
                                 # index 넘지 않게
-                            if (image_count >= len(savename)): continue
+                            elif i.has_attr('class'):
+                                print("")
+                            else:
+                                if (image_count >= len(savename)): continue
 
-                            i.name = 'img'                   # img로 바꾸고, attribute 다 지우고 src 추가하기
-                            i.attrs.clear()
-                            i['src'] = savename[image_count]
-                            image_count += 1
+                                i.name = 'img'                   # img로 바꾸고, attribute 다 지우고 src 추가하기
+                                i.attrs.clear()
+                                i['src'] = savename[image_count]
+                                image_count += 1
             file.write(str(item))
     except Exception as e :
         print(2)
