@@ -165,6 +165,21 @@ def str_download(dcurl, directory, title):
         for i in range(10):
             savename.append(savename[0])
 
+
+
+    try:
+        if nickname.find_all('a', class_='writer_nikcon'):
+            nickcon = nickname.find('a', class_='writer_nikcon').find('img')
+        onclick = nickcon['onclick'][13:]
+        onclick = onclick[:-3]
+        onclick = "https:" + onclick
+        nickcon['onclick'] = "window.open('" + onclick + "');"
+        print(onclick)
+    except Exception as e:
+        print(e)
+        print("nickcon exception")
+
+
     file = open(directory + "/%s.html"%title, "w", encoding='UTF-8')
     file.write(r"""
     <!DOCTYPE html>
